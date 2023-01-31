@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const uri = "mongodb://knightofhonour:Inlussion123@ac-adysxti-shard-00-00.duplhsn.mongodb.net:27017,ac-adysxti-shard-00-01.duplhsn.mongodb.net:27017,ac-adysxti-shard-00-02.duplhsn.mongodb.net:27017/?ssl=true&replicaSet=atlas-wt2oe1-shard-0&authSource=admin&retryWrites=true&w=majority"
 const dbName = "BOKapp"
 
 type classic_entry struct {
@@ -80,7 +81,16 @@ func readFromMongoDB(client *mongo.Client, search_criteria primitive.E, collecti
 	return err
 }
 
+func readenv(key string) string {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	return os.Getenv(key)
+}
+
 func connect() *mongo.Client {
+	uri := readenv("uri")
 	serverAPIOptions := options.ServerAPI(options.ServerAPIVersion1)
 	clientOptions := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPIOptions)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
