@@ -97,7 +97,7 @@ func TestInsertIntoEntry(t *testing.T) {
 	client := connect()
 	result := insertEntry(client, test)
 	assert.Equal(t, true, result)
-	coll := client.Database(dbName).Collection("entry")
+	coll := client.Database(dbName).Collection(entryCollection)
 	filter := primitive.E{Key: "text", Value: test}
 	deleteResult, err := coll.DeleteMany(context.TODO(), bson.D{filter})
 	if err != nil {
@@ -113,7 +113,7 @@ func TestInsertIntoCategoryAndUpdateCategory(t *testing.T) {
 	assert.Equal(t, true, result)
 	result = updateCategory(client, test, 2)
 	assert.Equal(t, true, result)
-	coll := client.Database(dbName).Collection("category")
+	coll := client.Database(dbName).Collection(categoryCollection)
 	filter := primitive.E{Key: "Category", Value: test}
 	deleteResult, err := coll.DeleteMany(context.TODO(), bson.D{filter})
 	if err != nil {
