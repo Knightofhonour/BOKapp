@@ -16,6 +16,8 @@ import (
 )
 
 const dbName = "BOKapp"
+const entryCollection = "entry"
+const categoryCollection = "category"
 
 type classic_entry struct {
 	ID   int64  `bson:"id,omitempty"`
@@ -40,7 +42,7 @@ func getAllEntriesWithCategory(client *mongo.Client, category string) []classic_
 }
 
 func getAllEntryIDWithCategory(client *mongo.Client, category string) []int {
-	collection := "category"
+	collection := categoryCollection
 	var result classic_category
 	var search_criteria = primitive.E{Key: "Category", Value: category}
 	record := readFromMongoDB(client, search_criteria, collection)
@@ -52,7 +54,7 @@ func getAllEntryIDWithCategory(client *mongo.Client, category string) []int {
 }
 
 func getRandomEntry(client *mongo.Client) classic_entry {
-	coll := client.Database(dbName).Collection("entry")
+	coll := client.Database(dbName).Collection(entryCollection)
 	filter := bson.D{}
 	size, err := coll.CountDocuments(context.TODO(), filter)
 	if err != nil {
@@ -64,7 +66,7 @@ func getRandomEntry(client *mongo.Client) classic_entry {
 }
 
 func getEntryByEntryID(client *mongo.Client, id int) classic_entry {
-	collection := "entry"
+	collection := entryCollection
 	var result classic_entry
 	var search_criteria = primitive.E{Key: "id", Value: id}
 	record := readFromMongoDB(client, search_criteria, collection)
@@ -76,23 +78,23 @@ func getEntryByEntryID(client *mongo.Client, id int) classic_entry {
 }
 
 func insertEntry(client *mongo.Client, text string) bool {
-	coll := client.Database(dbName).Collection("entry")
+	coll := client.Database(dbName).Collection(entryCollection)
 	filter := bson.D{}
 	size, err := coll.CountDocuments(context.TODO(), filter)
 	if err != nil {
 		panic(err)
 	}
 	entryToInsert := classic_entry{ID: size + 1, Text: text, Tag: "basic"}
-	return insertIntoMongo(client, "entry", entryToInsert)
+	return insertIntoMongo(client, entryCollection, entryToInsert)
 }
 
 func insertCategory(client *mongo.Client, category string, entryID int) bool {
 	categoryToInsert := classic_category{TypeOfCategory: "basic", Entries: []int{entryID}, Category: category}
-	return insertIntoMongo(client, "category", categoryToInsert)
+	return insertIntoMongo(client, categoryCollection, categoryToInsert)
 }
 
 func updateCategory(client *mongo.Client, category string, entryID int) bool {
-	coll := client.Database(dbName).Collection("category")
+	coll := client.Database(dbName).Collection(categoryCollection)
 	filter := primitive.E{Key: "Category", Value: category}
 	allEntryIDWithCategory := getAllEntryIDWithCategory(client, category)
 	allEntryIDWithCategory = append(allEntryIDWithCategory, entryID)
