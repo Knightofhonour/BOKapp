@@ -24,7 +24,7 @@ type classic_entry struct {
 }
 
 type classic_category struct {
-	TypeOfCategory string `bson:"TypeOfTag,omitempty"`
+	TypeOfCategory string `bson:"TypeOfCategory,omitempty"`
 	Category       string `bson:"Category,omitempty"`
 	Entries        []int  `bson:"entries"`
 }
@@ -75,10 +75,53 @@ func getEntryByEntryID(client *mongo.Client, id int) classic_entry {
 	return result
 }
 
+func insertEntry(client *mongo.Client, text string) bool {
+	coll := client.Database(dbName).Collection("entry")
+	filter := bson.D{}
+	size, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		panic(err)
+	}
+	entryToInsert := classic_entry{ID: size + 1, Text: text, Tag: "basic"}
+	return insertIntoMongo(client, "entry", entryToInsert)
+}
+
+func insertCategory(client *mongo.Client, category string, entryID int) bool {
+	categoryToInsert := classic_category{TypeOfCategory: "basic", Entries: []int{entryID}, Category: category}
+	return insertIntoMongo(client, "category", categoryToInsert)
+}
+
+func updateCategory(client *mongo.Client, category string, entryID int) bool {
+	coll := client.Database(dbName).Collection("category")
+	filter := primitive.E{Key: "Category", Value: category}
+	allEntryIDWithCategory := getAllEntryIDWithCategory(client, category)
+	allEntryIDWithCategory = append(allEntryIDWithCategory, entryID)
+	categoryToUpdate := classic_category{TypeOfCategory: "basic", Entries: allEntryIDWithCategory, Category: category}
+	result, err := coll.ReplaceOne(context.TODO(), bson.D{filter}, categoryToUpdate)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	if result.MatchedCount == 0 {
+		return false
+	}
+	return true
+}
+
 func readFromMongoDB(client *mongo.Client, search_criteria primitive.E, collection string) *mongo.SingleResult {
 	coll := client.Database(dbName).Collection(collection)
-	err := coll.FindOne(context.TODO(), bson.D{search_criteria})
-	return err
+	result := coll.FindOne(context.TODO(), bson.D{search_criteria})
+	return result
+}
+
+func insertIntoMongo(client *mongo.Client, collection string, toInsert interface{}) bool {
+	coll := client.Database(dbName).Collection(collection)
+	_, err := coll.InsertOne(context.TODO(), toInsert)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	return true
 }
 
 func readenv(key string) string {
