@@ -70,6 +70,17 @@ func TestGetRandomEntry(t *testing.T) {
 	assert.Contains(t, expected_entry_array, entry)
 }
 
+func TestGetTextFromRandomEntry(t *testing.T) {
+	client := connect()
+	text := getTextFromRandomEntry(client)
+	expected_text1 := "this is the first text"
+	expected_text2 := "this is the second text"
+	expected_text3 := "this is the third text"
+	expected_text4 := "test string"
+	expected_entry_array := []string{expected_text1, expected_text2, expected_text3, expected_text4}
+	assert.Contains(t, expected_entry_array, text)
+}
+
 func TestGetAllEntriesWithTag(t *testing.T) {
 	client := connect()
 	entry := getAllEntriesWithCategory(client, "test1")
@@ -92,10 +103,28 @@ func TestGetAllEntriesWithTag(t *testing.T) {
 	assert.Equal(t, expected_entry_array, entry)
 }
 
+func TestGetTextFromAllEntriesWithTag(t *testing.T) {
+	client := connect()
+	texts := getTextFromAllEntriesWithCategory(client, "test1", 0, 10) //test a larger length
+	expected_text1 := "this is the first text"
+	expected_text2 := "this is the second text"
+	expected_text3 := "this is the third text"
+	expected_entry_array := []string{expected_text1, expected_text2, expected_text3}
+	assert.Equal(t, expected_entry_array, texts)
+
+	texts2 := getTextFromAllEntriesWithCategory(client, "test1", 10, 12) //test a bad start point
+	expected_entry_array2 := []string{}
+	assert.Equal(t, expected_entry_array2, texts2)
+
+	texts3 := getTextFromAllEntriesWithCategory(client, "test1", 0, 1) //test a bad start point
+	expected_entry_array3 := []string{expected_text1}
+	assert.Equal(t, expected_entry_array3, texts3)
+}
+
 func TestInsertIntoEntry(t *testing.T) {
 	test := "test string"
 	client := connect()
-	result := insertEntry(client, test)
+	result, new_ID := insertEntry(client, test)
 	assert.Equal(t, true, result)
 	coll := client.Database(dbName).Collection(entryCollection)
 	filter := primitive.E{Key: "text", Value: test}
@@ -103,6 +132,7 @@ func TestInsertIntoEntry(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+	assert.Equal(t, 4, new_ID) //already 3 existing ones
 	assert.NotEqual(t, 0, int(deleteResult.DeletedCount))
 }
 

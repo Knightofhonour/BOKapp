@@ -77,15 +77,16 @@ func getEntryByEntryID(client *mongo.Client, id int) classic_entry {
 	return result
 }
 
-func insertEntry(client *mongo.Client, text string) bool {
+func insertEntry(client *mongo.Client, text string) (bool, int) {
 	coll := client.Database(dbName).Collection(entryCollection)
 	filter := bson.D{}
 	size, err := coll.CountDocuments(context.TODO(), filter)
 	if err != nil {
 		panic(err)
 	}
-	entryToInsert := classic_entry{ID: size + 1, Text: text, Tag: "basic"}
-	return insertIntoMongo(client, entryCollection, entryToInsert)
+	new_ID := size + 1
+	entryToInsert := classic_entry{ID: new_ID, Text: text, Tag: "basic"}
+	return insertIntoMongo(client, entryCollection, entryToInsert), int(new_ID)
 }
 
 func insertCategory(client *mongo.Client, category string, entryID int) bool {
@@ -148,12 +149,12 @@ func connect() *mongo.Client {
 	return client
 }
 
-func main() {
-	client := connect()
-	entry := getEntryByEntryID(client, 1)
-	fmt.Println(entry)
-	entry = getRandomEntry(client)
-	fmt.Println(entry)
-	tagEntries := getAllEntriesWithCategory(client, "test1")
-	fmt.Println(tagEntries)
-}
+// func main() {
+// 	client := connect()
+// 	entry := getEntryByEntryID(client, 1)
+// 	fmt.Println(entry)
+// 	entry = getRandomEntry(client)
+// 	fmt.Println(entry)
+// 	tagEntries := getAllEntriesWithCategory(client, "test1")
+// 	fmt.Println(tagEntries)
+// }
