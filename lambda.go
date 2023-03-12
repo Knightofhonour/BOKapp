@@ -15,20 +15,20 @@ func inStringArray(arr []string, element string) bool {
 	return false
 }
 
-func createEntry(client *mongo.Client, text string, category string) (bool, error) {
-	success, new_id := insertEntry(client, text)
+func createEntry(client *mongo.Client, text string, category string, entryCollection string, categoryListCollection string, categoryCollection string) (bool, error) {
+	success, new_id := insertEntry(client, text, entryCollection)
 	if !success {
 		return false, errors.New("failed to create entry")
 	}
-	categories := getAllCategories(client)
+	categories := getAllCategories(client, categoryListCollection)
 	categoryAlreadyPresent := inStringArray(categories, category)
 	if categoryAlreadyPresent {
-		success = updateCategory(client, category, new_id)
+		success = updateCategory(client, category, new_id, categoryCollection)
 		if !success {
 			return false, errors.New("failed to update category")
 		}
 	} else {
-		success = insertCategory(client, category, new_id)
+		success = insertCategory(client, category, new_id, categoryCollection, categoryListCollection)
 		if !success {
 			return false, errors.New("failed to insert into category")
 		}
@@ -36,8 +36,8 @@ func createEntry(client *mongo.Client, text string, category string) (bool, erro
 	return true, nil
 }
 
-func getTextFromAllEntriesWithCategory(client *mongo.Client, category string, start int, numberToCall int) []string {
-	allEntriesWithCategory := getAllEntriesWithCategory(client, category)
+func getTextFromAllEntriesWithCategory(client *mongo.Client, category string, start int, numberToCall int, categoryCollection string, entryCollection string) []string {
+	allEntriesWithCategory := getAllEntriesWithCategory(client, category, categoryCollection, entryCollection)
 	end := start + numberToCall
 	if end > len(allEntriesWithCategory) {
 		end = len(allEntriesWithCategory)
@@ -53,7 +53,7 @@ func getTextFromAllEntriesWithCategory(client *mongo.Client, category string, st
 	return AllEntriesText
 }
 
-func getTextFromRandomEntry(client *mongo.Client) string {
-	randomEntry := getRandomEntry(client)
+func getTextFromRandomEntry(client *mongo.Client, entryCollection string) string {
+	randomEntry := getRandomEntry(client, entryCollection)
 	return randomEntry.Text
 }

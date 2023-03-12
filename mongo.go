@@ -16,9 +16,6 @@ import (
 )
 
 const dbName = "BOKapp"
-const entryCollection = "entry"
-const categoryCollection = "category"
-const categorylistCollection = "categorylist"
 
 type classic_entry struct {
 	ID   int64  `bson:"id,omitempty"`
@@ -36,11 +33,10 @@ type classic_category_list struct {
 	Categories []string `bson:"categories"`
 }
 
-func getAllCategories(client *mongo.Client) []string {
-	collection := categorylistCollection
+func getAllCategories(client *mongo.Client, categoryListCollection string) []string {
 	var result classic_category_list
 	var search_criteria = primitive.E{}
-	record := readFromMongoDB(client, search_criteria, collection)
+	record := readFromMongoDB(client, search_criteria, categoryListCollection)
 	err := record.Decode(&result)
 	if err != nil {
 		panic(err)
@@ -48,21 +44,20 @@ func getAllCategories(client *mongo.Client) []string {
 	return result.Categories
 }
 
-func getAllEntriesWithCategory(client *mongo.Client, category string) []classic_entry {
-	allEntryIDWithCategory := getAllEntryIDWithCategory(client, category)
+func getAllEntriesWithCategory(client *mongo.Client, category string, categoryCollection string, entryCollection string) []classic_entry {
+	allEntryIDWithCategory := getAllEntryIDWithCategory(client, category, categoryCollection)
 	var AllEntriesWithCategory []classic_entry
 	for _, v := range allEntryIDWithCategory {
-		entry := getEntryByEntryID(client, v)
+		entry := getEntryByEntryID(client, v, entryCollection)
 		AllEntriesWithCategory = append(AllEntriesWithCategory, entry)
 	}
 	return AllEntriesWithCategory
 }
 
-func getAllEntryIDWithCategory(client *mongo.Client, category string) []int {
-	collection := categoryCollection
+func getAllEntryIDWithCategory(client *mongo.Client, category string, categoryCollection string) []int {
 	var result classic_category
 	var search_criteria = primitive.E{Key: "Category", Value: category}
-	record := readFromMongoDB(client, search_criteria, collection)
+	record := readFromMongoDB(client, search_criteria, categoryCollection)
 	err := record.Decode(&result)
 	if err != nil {
 		panic(err)
@@ -70,7 +65,7 @@ func getAllEntryIDWithCategory(client *mongo.Client, category string) []int {
 	return result.Entries
 }
 
-func getRandomEntry(client *mongo.Client) classic_entry {
+func getRandomEntry(client *mongo.Client, entryCollection string) classic_entry {
 	coll := client.Database(dbName).Collection(entryCollection)
 	filter := bson.D{}
 	size, err := coll.CountDocuments(context.TODO(), filter)
@@ -79,14 +74,13 @@ func getRandomEntry(client *mongo.Client) classic_entry {
 	}
 	rand.Seed(time.Now().UnixNano())
 	id := rand.Intn(int(size)) + 1
-	return getEntryByEntryID(client, id)
+	return getEntryByEntryID(client, id, entryCollection)
 }
 
-func getEntryByEntryID(client *mongo.Client, id int) classic_entry {
-	collection := entryCollection
+func getEntryByEntryID(client *mongo.Client, id int, entryCollection string) classic_entry {
 	var result classic_entry
 	var search_criteria = primitive.E{Key: "id", Value: id}
-	record := readFromMongoDB(client, search_criteria, collection)
+	record := readFromMongoDB(client, search_criteria, entryCollection)
 	err := record.Decode(&result)
 	if err != nil {
 		panic(err)
@@ -94,7 +88,7 @@ func getEntryByEntryID(client *mongo.Client, id int) classic_entry {
 	return result
 }
 
-func insertEntry(client *mongo.Client, text string) (bool, int) {
+func insertEntry(client *mongo.Client, text string, entryCollection string) (bool, int) {
 	coll := client.Database(dbName).Collection(entryCollection)
 	filter := bson.D{}
 	size, err := coll.CountDocuments(context.TODO(), filter)
@@ -106,15 +100,34 @@ func insertEntry(client *mongo.Client, text string) (bool, int) {
 	return insertIntoMongo(client, entryCollection, entryToInsert), int(new_ID)
 }
 
-func insertCategory(client *mongo.Client, category string, entryID int) bool {
+func insertCategory(client *mongo.Client, category string, entryID int, categoryCollection string, categoryListCollection string) bool {
 	categoryToInsert := classic_category{TypeOfCategory: "basic", Entries: []int{entryID}, Category: category}
-	return insertIntoMongo(client, categoryCollection, categoryToInsert)
+	success := insertIntoMongo(client, categoryCollection, categoryToInsert)
+	success2 := updateCategoryList(client, categoryListCollection, category)
+	return success && success2
 }
 
-func updateCategory(client *mongo.Client, category string, entryID int) bool {
+func updateCategoryList(client *mongo.Client, categoryListCollection string, category string) bool {
+	coll := client.Database(dbName).Collection(categoryListCollection)
+	allCategories := getAllCategories(client, categoryListCollection)
+	allCategories = append(allCategories, category)
+	categoryListUpdate := classic_category_list{Categories: allCategories}
+
+	result, err := coll.ReplaceOne(context.TODO(), bson.D{}, categoryListUpdate)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	if result.ModifiedCount != 1 {
+		return false
+	}
+	return true
+}
+
+func updateCategory(client *mongo.Client, category string, entryID int, categoryCollection string) bool {
 	coll := client.Database(dbName).Collection(categoryCollection)
 	filter := primitive.E{Key: "Category", Value: category}
-	allEntryIDWithCategory := getAllEntryIDWithCategory(client, category)
+	allEntryIDWithCategory := getAllEntryIDWithCategory(client, category, categoryCollection)
 	allEntryIDWithCategory = append(allEntryIDWithCategory, entryID)
 	categoryToUpdate := classic_category{TypeOfCategory: "basic", Entries: allEntryIDWithCategory, Category: category}
 	result, err := coll.ReplaceOne(context.TODO(), bson.D{filter}, categoryToUpdate)

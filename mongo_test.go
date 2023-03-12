@@ -6,155 +6,62 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// func TestGetEntryByEntryIDwithMock(t *testing.T) {
-// 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-// 	defer mt.Close()
-
-// 	mt.Run("success", func(mt *mtest.T) {
-// 		expectedEntry := classic_entry{
-// 			ID:   1,
-// 			Text: "this is the first text",
-// 			Tag:  "basic",
-// 		}
-
-// 		mCollection := mtest.Collection{Name: "entry"}
-// 		mt.CreateCollection(mCollection, true)
-// 		mt.AddMockResponses(mtest.CreateCursorResponse(1, "main.readEntry", mtest.FirstBatch, bson.D{
-// 			primitive.E{Key: "Text", Value: expectedEntry.Text},
-// 			primitive.E{Key: "ID", Value: expectedEntry.ID},
-// 			primitive.E{Key: "Tag", Value: expectedEntry.Tag},
-// 		}))
-// 		userResponse := getEntryByEntryID(mt.Client, 1)
-// 		assert.Equal(t, expectedEntry, userResponse)
-// 	})
-// }
-
-func TestGetEntryByEntryID(t *testing.T) {
+func TestAll(t *testing.T) {
 	client := connect()
-	entry := getEntryByEntryID(client, 1)
-	expected_entry := classic_entry{
-		ID:   1,
-		Text: "this is the first text",
-		Tag:  "basic",
-	}
-	assert.Equal(t, entry, expected_entry)
-}
-
-func TestGetRandomEntry(t *testing.T) {
-	client := connect()
-	entry := getRandomEntry(client)
-	expected_entry1 := classic_entry{
-		ID:   1,
-		Text: "this is the first text",
-		Tag:  "basic",
-	}
-	expected_entry2 := classic_entry{
-		ID:   2,
-		Text: "this is the second text",
-		Tag:  "basic",
-	}
-	expected_entry3 := classic_entry{
-		ID:   3,
-		Text: "this is the third text",
-		Tag:  "basic",
-	}
-	expected_entry4 := classic_entry{
-		ID:   entry.ID,
-		Text: "test string",
-		Tag:  "basic",
-	}
-	expected_entry_array := []classic_entry{expected_entry1, expected_entry2, expected_entry3, expected_entry4}
-	assert.Contains(t, expected_entry_array, entry)
-}
-
-func TestGetTextFromRandomEntry(t *testing.T) {
-	client := connect()
-	text := getTextFromRandomEntry(client)
+	entryCollection := "test_entry"
+	categoryCollection := "test_category"
+	categorylistCollection := "test_categorylist"
 	expected_text1 := "this is the first text"
 	expected_text2 := "this is the second text"
 	expected_text3 := "this is the third text"
-	expected_text4 := "test string"
-	expected_entry_array := []string{expected_text1, expected_text2, expected_text3, expected_text4}
-	assert.Contains(t, expected_entry_array, text)
-}
 
-func TestGetAllEntriesWithTag(t *testing.T) {
-	client := connect()
-	entry := getAllEntriesWithCategory(client, "test1")
-	expected_entry1 := classic_entry{
-		ID:   1,
-		Text: "this is the first text",
-		Tag:  "basic",
-	}
-	expected_entry2 := classic_entry{
-		ID:   2,
-		Text: "this is the second text",
-		Tag:  "basic",
-	}
-	expected_entry3 := classic_entry{
-		ID:   3,
-		Text: "this is the third text",
-		Tag:  "basic",
-	}
-	expected_entry_array := []classic_entry{expected_entry1, expected_entry2, expected_entry3}
-	assert.Equal(t, expected_entry_array, entry)
-}
+	//test create entry
+	success, err := createEntry(client, expected_text1, "test1", entryCollection, categorylistCollection, categoryCollection)
+	assert.Equal(t, true, success)
+	assert.Equal(t, nil, err)
+	success, err = createEntry(client, expected_text2, "test1", entryCollection, categorylistCollection, categoryCollection)
+	assert.Equal(t, true, success)
+	assert.Equal(t, nil, err)
+	success, err = createEntry(client, expected_text3, "test2", entryCollection, categorylistCollection, categoryCollection)
+	assert.Equal(t, true, success)
+	assert.Equal(t, nil, err)
 
-func TestGetTextFromAllEntriesWithTag(t *testing.T) {
-	client := connect()
-	texts := getTextFromAllEntriesWithCategory(client, "test1", 0, 10) //test a larger length
-	expected_text1 := "this is the first text"
-	expected_text2 := "this is the second text"
-	expected_text3 := "this is the third text"
-	expected_entry_array := []string{expected_text1, expected_text2, expected_text3}
+	//test get entries with category
+	texts := getTextFromAllEntriesWithCategory(client, "test1", 0, 10, categoryCollection, entryCollection) //test a larger length
+	expected_entry_array := []string{expected_text1, expected_text2}
 	assert.Equal(t, expected_entry_array, texts)
-
-	texts2 := getTextFromAllEntriesWithCategory(client, "test1", 10, 12) //test a bad start point
+	texts2 := getTextFromAllEntriesWithCategory(client, "test1", 10, 12, categoryCollection, entryCollection) //test a bad start point
 	expected_entry_array2 := []string{}
 	assert.Equal(t, expected_entry_array2, texts2)
-
-	texts3 := getTextFromAllEntriesWithCategory(client, "test1", 0, 1) //test a bad start point
-	expected_entry_array3 := []string{expected_text1}
+	texts3 := getTextFromAllEntriesWithCategory(client, "test2", 0, 1, categoryCollection, entryCollection) //test a bad start point
+	expected_entry_array3 := []string{expected_text3}
 	assert.Equal(t, expected_entry_array3, texts3)
-}
 
-func TestInsertIntoEntry(t *testing.T) {
-	test := "test string"
-	client := connect()
-	result, new_ID := insertEntry(client, test)
-	assert.Equal(t, true, result)
-	coll := client.Database(dbName).Collection(entryCollection)
-	filter := primitive.E{Key: "text", Value: test}
-	deleteResult, err := coll.DeleteMany(context.TODO(), bson.D{filter})
-	if err != nil {
-		panic(err)
-	}
-	assert.Equal(t, 4, new_ID) //already 3 existing ones
-	assert.NotEqual(t, 0, int(deleteResult.DeletedCount))
-}
+	//test random entry
+	text := getTextFromRandomEntry(client, entryCollection)
+	expected_entry_array = []string{expected_text1, expected_text2, expected_text3}
+	assert.Contains(t, expected_entry_array, text)
 
-func TestInsertIntoCategoryAndUpdateCategory(t *testing.T) {
-	test := "test"
-	client := connect()
-	result := insertCategory(client, test, 1)
-	assert.Equal(t, true, result)
-	result = updateCategory(client, test, 2)
-	assert.Equal(t, true, result)
-	coll := client.Database(dbName).Collection(categoryCollection)
-	filter := primitive.E{Key: "Category", Value: test}
-	deleteResult, err := coll.DeleteMany(context.TODO(), bson.D{filter})
-	if err != nil {
-		panic(err)
-	}
-	assert.NotEqual(t, 0, int(deleteResult.DeletedCount))
-}
-
-func TestGetAllCategories(t *testing.T) {
-	client := connect()
-	categories := getAllCategories(client)
-	assert.Equal(t, 1, len(categories))
+	//test all categories
+	categories := getAllCategories(client, categorylistCollection)
+	assert.Equal(t, 2, len(categories))
 	assert.Equal(t, "test1", categories[0])
+	assert.Equal(t, "test2", categories[1])
+
+	//reset all test collections
+	coll := client.Database(dbName).Collection(categoryCollection)
+	deleteResult, err := coll.DeleteMany(context.TODO(), bson.D{})
+	assert.Equal(t, 2, int(deleteResult.DeletedCount))
+	assert.Equal(t, nil, err)
+	coll = client.Database(dbName).Collection(entryCollection)
+	deleteResult, err = coll.DeleteMany(context.TODO(), bson.D{})
+	assert.Equal(t, 3, int(deleteResult.DeletedCount))
+	assert.Equal(t, nil, err)
+	coll = client.Database(dbName).Collection(categorylistCollection)
+	categoryListUpdate := classic_category_list{Categories: []string{}}
+	result, err := coll.ReplaceOne(context.TODO(), bson.D{}, categoryListUpdate)
+	assert.Equal(t, 1, int(result.ModifiedCount))
+	assert.Equal(t, nil, err)
 }
