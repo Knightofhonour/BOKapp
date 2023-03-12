@@ -18,6 +18,7 @@ import (
 const dbName = "BOKapp"
 const entryCollection = "entry"
 const categoryCollection = "category"
+const categorylistCollection = "categorylist"
 
 type classic_entry struct {
 	ID   int64  `bson:"id,omitempty"`
@@ -29,6 +30,22 @@ type classic_category struct {
 	TypeOfCategory string `bson:"TypeOfCategory,omitempty"`
 	Category       string `bson:"Category,omitempty"`
 	Entries        []int  `bson:"entries"`
+}
+
+type classic_category_list struct {
+	Categories []string `bson:"categories"`
+}
+
+func getAllCategories(client *mongo.Client) []string {
+	collection := categorylistCollection
+	var result classic_category_list
+	var search_criteria = primitive.E{}
+	record := readFromMongoDB(client, search_criteria, collection)
+	err := record.Decode(&result)
+	if err != nil {
+		panic(err)
+	}
+	return result.Categories
 }
 
 func getAllEntriesWithCategory(client *mongo.Client, category string) []classic_entry {
