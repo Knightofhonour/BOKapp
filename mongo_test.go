@@ -151,3 +151,10 @@ func TestInsertIntoCategoryAndUpdateCategory(t *testing.T) {
 	}
 	assert.NotEqual(t, 0, int(deleteResult.DeletedCount))
 }
+
+func TestGetAllCategories(t *testing.T) {
+	client := connect()
+	categories := getAllCategories(client)
+	assert.Equal(t, 1, len(categories))
+	assert.Equal(t, "test1", categories[0])
+}
