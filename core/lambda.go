@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"errors"
@@ -15,7 +15,7 @@ func inStringArray(arr []string, element string) bool {
 	return false
 }
 
-func createEntry(client *mongo.Client, text string, category string, entryCollection string, categoryListCollection string, categoryCollection string) (bool, error) {
+func CreateEntry(client *mongo.Client, text string, category string, entryCollection string, categoryListCollection string, categoryCollection string) (bool, error) {
 	success, new_id := insertEntry(client, text, entryCollection)
 	if !success {
 		return false, errors.New("failed to create entry")
@@ -53,7 +53,7 @@ func getTextFromAllEntriesWithCategory(client *mongo.Client, category string, st
 	return AllEntriesText
 }
 
-func getTextFromRandomEntry(client *mongo.Client, entryCollection string) string {
+func GetTextFromRandomEntry(client *mongo.Client, entryCollection string) string {
 	randomEntry := getRandomEntry(client, entryCollection)
 	return randomEntry.Text
 }
