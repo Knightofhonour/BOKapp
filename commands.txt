@@ -1,0 +1,10 @@
+cp -R ../core .
+docker build --tag hello_world .
+rm -R core/
+aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 656421822819.dkr.ecr.ap-southeast-1.amazonaws.com
+docker tag hello-world:latest 656421822819.dkr.ecr.ap-southeast-1.amazonaws.com/helloworld:latest (do not change helloworld)
+docker push 656421822819.dkr.ecr.ap-southeast-1.amazonaws.com/helloworld:latest (do not change helloworld)
+manually go to AWS lambda console and create function through image
+aws lambda invoke --function-name helloworld --payload file://input.json --cli-binary-format raw-in-base64-out output.json
+aws lambda invoke --function-name helloworld --payload '{ ""name"" : ""dave"" }' --cli-binary-format raw-in-base64-out output.json
+cat output.json 

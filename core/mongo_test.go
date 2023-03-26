@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestAll(t *testing.T) {
-	client := connect()
+	client := Connect()
 	entryCollection := "test_entry"
 	categoryCollection := "test_category"
 	categorylistCollection := "test_categorylist"
@@ -18,13 +18,13 @@ func TestAll(t *testing.T) {
 	expected_text3 := "this is the third text"
 
 	//test create entry
-	success, err := createEntry(client, expected_text1, "test1", entryCollection, categorylistCollection, categoryCollection)
+	success, err := CreateEntry(client, expected_text1, "test1", entryCollection, categorylistCollection, categoryCollection)
 	assert.Equal(t, true, success)
 	assert.Equal(t, nil, err)
-	success, err = createEntry(client, expected_text2, "test1", entryCollection, categorylistCollection, categoryCollection)
+	success, err = CreateEntry(client, expected_text2, "test1", entryCollection, categorylistCollection, categoryCollection)
 	assert.Equal(t, true, success)
 	assert.Equal(t, nil, err)
-	success, err = createEntry(client, expected_text3, "test2", entryCollection, categorylistCollection, categoryCollection)
+	success, err = CreateEntry(client, expected_text3, "test2", entryCollection, categorylistCollection, categoryCollection)
 	assert.Equal(t, true, success)
 	assert.Equal(t, nil, err)
 
