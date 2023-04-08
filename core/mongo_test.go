@@ -40,7 +40,7 @@ func TestAll(t *testing.T) {
 	assert.Equal(t, expected_entry_array3, texts3)
 
 	//test random entry
-	text := getTextFromRandomEntry(client, entryCollection)
+	text := GetTextFromRandomEntry(client, entryCollection)
 	expected_entry_array = []string{expected_text1, expected_text2, expected_text3}
 	assert.Contains(t, expected_entry_array, text)
 
